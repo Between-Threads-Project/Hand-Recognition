@@ -80,9 +80,9 @@ All distances are normalized relative to hand width (distance between index base
         6   10   14   18
         |    |    |    |
         5    9   13   17
-           \   |   /
-              0
-            Wrist
+        \    |    |   /
+               0
+             Wrist
 ```
 
 ## Configuration
