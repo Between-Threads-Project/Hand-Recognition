@@ -1,10 +1,11 @@
 [project]
 name = "hand-recognition"
 version = "0.1.0"
-description = "Add your description here"
+description = "The hand-recognition module logic which send data to other scripts"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "mediapipe>=0.10.32",
     "opencv-python>=4.13.0.92",
+    "ruff>=0.15.6",
 ]
