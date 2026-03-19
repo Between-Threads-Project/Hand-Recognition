@@ -8,9 +8,10 @@ from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
 from core.utils import wrist_distance_relative
+from scripts.perlin_noise import Perlin_layer
 
 
-def start_hand_tracking(address: List[Tuple[str, str, int]]) -> None:
+def start_hand_tracking(address: List[Tuple[str, str, int]], modifier: bool) -> None:
     """
     Démarre la capture de la main et envoie les distances via UDP sur les ports spécifiés.
 
@@ -24,6 +25,7 @@ def start_hand_tracking(address: List[Tuple[str, str, int]]) -> None:
                  - type: `full` pour envoyer toutes les données, ou `small` pour un sous-ensemble.
                  - ip: Adresse IP de destination.
                  - port: Port de destination.
+        modifier: Booléen qui applique le bruit de perlin.
 
     Returns:
         None
@@ -97,6 +99,11 @@ def start_hand_tracking(address: List[Tuple[str, str, int]]) -> None:
                 }
 
                 print("Hand recognized.", end=" ")
+
+                # Pelrin noise
+                if modifier:
+                    full_message = Perlin_layer(full_data)
+                    small_message = Perlin_layer(small_data)
 
                 # Conversion en JSON
                 full_message = json.dumps(full_data)

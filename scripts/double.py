@@ -1,5 +1,4 @@
 import json
-import math
 import socket
 
 import cv2
@@ -7,19 +6,19 @@ import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
-# =========================
-# UDP CONFIG
-# =========================
-UDP_IP = "127.0.0.1"
-UDP_PORT_Droit = 5060
-UDP_PORT_Gauche = 5059
+from core.utils import wrist_distance_relative
+
+UDP_IP_full = "127.0.0.1"
+UDP_PORT_Droit_full = 5060
+UDP_PORT_Gauche_full = 5059
+
+UDP_IP_small = "10.0.0.45"
+UDP_PORT_Droit_small = 5000
+UDP_PORT_Gauche_small = 5001
+
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-
-# =========================
-# MEDIAPIPE TASKS SETUP
-# =========================
 base_options = python.BaseOptions(model_asset_path="model/hand_landmarker.task")
 
 options = vision.HandLandmarkerOptions(
@@ -30,10 +29,6 @@ options = vision.HandLandmarkerOptions(
 
 landmarker = vision.HandLandmarker.create_from_options(options)
 
-
-# =========================
-# CAMERA
-# =========================
 cap = cv2.VideoCapture(0)
 
 # réduit la latence
@@ -41,42 +36,6 @@ cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
 timestamp = 0
 
-
-# =========================
-# DISTANCE FUNCTION
-# =========================
-def wrist_distance_relative(hand, wrist, tip_index):
-    """
-    Distance poignet -> doigt
-    normalisée par la distance index_tip <-> pinky_tip
-    """
-
-    tip = hand[tip_index]
-
-    dx = tip.x - wrist.x
-    dy = tip.y - wrist.y
-    dist = math.sqrt(dx * dx + dy * dy)
-
-    index_o = hand[5]
-    pinky_o = hand[17]
-
-    dx_ref = index_o.x - pinky_o.x
-    dy_ref = index_o.y - pinky_o.y
-    ref = math.sqrt(dx_ref * dx_ref + dy_ref * dy_ref)
-
-    if ref < 1e-6:
-        return 0
-
-    dist = dist / ref
-    dist = min(2.0, dist)
-    dist = dist - 1.0
-
-    return dist
-
-
-# =========================
-# MAIN LOOP
-# =========================
 while True:
     ret, frame = cap.read()
     if not ret:
@@ -107,7 +66,7 @@ while True:
             pinky1 = wrist_distance_relative(hand, wrist, 20)
             pinky2 = wrist_distance_relative(hand, wrist, 19)
 
-            data = {
+            full_data = {
                 "thumb1": thumb1,
                 "thumb2": thumb2,
                 "index1": index1,
@@ -119,22 +78,25 @@ while True:
                 "pinky1": pinky1,
                 "pinky2": pinky2,
             }
+            small_data = {"index": round(index1, 1), "middle": round(middle1, 1)}
 
-            message = json.dumps(data)
-
-            print(message)
+            full_message = json.dumps(full_data)
+            small_message = json.dumps(small_data)
 
             # MODIF : détection Left / Right
             handedness = result.handedness[i][0].category_name
 
             if handedness == "Right":
-                sock.sendto(message.encode(), (UDP_IP, UDP_PORT_Droit))
+                sock.sendto(full_message.encode(), (UDP_IP_full, UDP_PORT_Droit_full))
+                sock.sendto(
+                    small_message.encode(), (UDP_IP_small, UDP_PORT_Droit_small)
+                )
 
             elif handedness == "Left":
-                sock.sendto(message.encode(), (UDP_IP, UDP_PORT_Gauche))
-
-    if cv2.waitKey(1) == 27:
-        break
+                sock.sendto(full_message.encode(), (UDP_IP_full, UDP_PORT_Gauche_full))
+                sock.sendto(
+                    small_message.encode(), (UDP_IP_small, UDP_PORT_Gauche_small)
+                )
 
 
 cap.release()
