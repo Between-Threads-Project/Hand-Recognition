@@ -65,16 +65,16 @@ def start_hand_tracking(address: List[Tuple[str, str, int]]) -> None:
                 wrist = hand[0]
 
                 # Calcul des distances relatives pour chaque doigt
-                thumb1 = (wrist_distance_relative(hand, wrist, 4),)
-                thumb2 = (wrist_distance_relative(hand, wrist, 3),)
-                index1 = (wrist_distance_relative(hand, wrist, 8),)
-                index2 = (wrist_distance_relative(hand, wrist, 7),)
-                middle1 = (wrist_distance_relative(hand, wrist, 12),)
-                middle2 = (wrist_distance_relative(hand, wrist, 11),)
-                ring1 = (wrist_distance_relative(hand, wrist, 16),)
-                ring2 = (wrist_distance_relative(hand, wrist, 15),)
-                pinky1 = (wrist_distance_relative(hand, wrist, 20),)
-                pinky2 = (wrist_distance_relative(hand, wrist, 19),)
+                thumb1 = wrist_distance_relative(hand, wrist, 4)
+                thumb2 = wrist_distance_relative(hand, wrist, 3)
+                index1 = wrist_distance_relative(hand, wrist, 8)
+                index2 = wrist_distance_relative(hand, wrist, 7)
+                middle1 = wrist_distance_relative(hand, wrist, 12)
+                middle2 = wrist_distance_relative(hand, wrist, 11)
+                ring1 = wrist_distance_relative(hand, wrist, 16)
+                ring2 = wrist_distance_relative(hand, wrist, 15)
+                pinky1 = wrist_distance_relative(hand, wrist, 20)
+                pinky2 = wrist_distance_relative(hand, wrist, 19)
 
                 # Données pour Unity et scripts
                 full_data = {
@@ -92,8 +92,8 @@ def start_hand_tracking(address: List[Tuple[str, str, int]]) -> None:
 
                 # Données pour Raspberry
                 small_data = {
-                    "index": index1,
-                    "middle": middle1,
+                    "index": round(index1, 1),
+                    "middle": round(middle1, 1),
                 }
 
                 print("Hand recognized.", end=" ")
@@ -111,8 +111,11 @@ def start_hand_tracking(address: List[Tuple[str, str, int]]) -> None:
                     else:
                         raise ValueError(f"Unknown message type: {type_}")
 
-                    sock.sendto(message.encode(), (ip, port))
-                    print(f"Sent to {ip}:{port}. ", end=" ")
+                    try:
+                        sock.sendto(message.encode(), (ip, port))
+                        print(f"Sent to {ip}:{port}.", end=" ")
+                    except socket.gaierror:
+                        print(f"SKIP {ip}:{port} not reachable.")
 
                 print()
 
