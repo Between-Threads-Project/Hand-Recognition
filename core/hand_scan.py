@@ -1,6 +1,6 @@
 import json
 import socket
-from typing import List, Tuple
+from typing import Callable, List, Tuple
 
 import cv2
 import mediapipe as mp
@@ -8,24 +8,27 @@ from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
 from core.utils import wrist_distance_relative
-from scripts.perlin_noise import Perlin_layer
 
 
-def start_hand_tracking(address: List[Tuple[str, str, int]], modifier: bool) -> None:
+def start_hand_tracking(
+    address: List[Tuple[str, str, int]],
+    modifier: Callable[[dict[str, float]], dict[str, float]] | None = None,
+) -> None:
     """
-    Démarre la capture de la main et envoie les distances via UDP sur les ports spécifiés.
+    Starts hand tracking and sends hand landmark data via UDP to specified endpoints.
 
-    Cette fonction initialise la capture vidéo, détecte les points de repère de la main,
-    calcule les distances relatives des doigts par rapport au poignet, et envoie ces données
-    au format JSON via UDP aux adresses spécifiées.
+    This function initializes video capture, detects hand landmarks using MediaPipe,
+    calculates relative distances of fingers from the wrist, and sends this data as JSON
+    via UDP to the specified addresses. It supports both full and small data formats.
 
     Args:
-        address: Liste de tuples contenant le type de message, l'adresse IP et le port.
-                 Chaque tuple est de la forme (type, ip, port), où :
-                 - type: `full` pour envoyer toutes les données, ou `small` pour un sous-ensemble.
-                 - ip: Adresse IP de destination.
-                 - port: Port de destination.
-        modifier: Booléen qui applique le bruit de perlin.
+        address: A list of tuples containing the message type, IP address, and port.
+                 Each tuple is in the form (type, ip, port), where:
+                 - type: "full" to send all finger data, or "small" to send a subset.
+                 - ip: Destination IP address.
+                 - port: Destination port.
+        modifier: An optional function to modify the data before sending.
+                  If provided, it will be applied to both full and small data.
 
     Returns:
         None
@@ -100,10 +103,10 @@ def start_hand_tracking(address: List[Tuple[str, str, int]], modifier: bool) -> 
 
                 print("Hand recognized.", end=" ")
 
-                # Pelrin noise
-                if modifier:
-                    full_message = Perlin_layer(full_data)
-                    small_message = Perlin_layer(small_data)
+                # Applique la fonction sur le dict
+                if modifier is not None:
+                    full_message = modifier(full_data)
+                    small_message = modifier(small_data)
 
                 # Conversion en JSON
                 full_message = json.dumps(full_data)
@@ -121,7 +124,7 @@ def start_hand_tracking(address: List[Tuple[str, str, int]], modifier: bool) -> 
                     try:
                         sock.sendto(message.encode(), (ip, port))
                         print(f"Sent to {ip}:{port}.", end=" ")
-                    except socket.gaierror:
+                    except socket.gaierror, OSError:
                         print(f"SKIP {ip}:{port} not reachable.")
 
                 print()
@@ -133,3 +136,4 @@ def start_hand_tracking(address: List[Tuple[str, str, int]], modifier: bool) -> 
         cap.release()
         cv2.destroyAllWindows()
         sock.close()
+        print("Clean exit.")

@@ -1,23 +1,24 @@
 import math
+import random
+import time
 
 
 def wrist_distance_relative(hand, wrist, tip_index: int) -> float:
     """
-    Calcule la distance normalisée entre le poignet et un doigt, relative à la largeur de la main.
+    Calculates the normalized distance between the wrist and a finger, relative to hand width.
 
-    Cette fonction normalise la distance entre le poignet et un doigt spécifique en utilisant
-    la distance entre l'index et l'auriculaire comme référence. La valeur résultante est
-    ensuite remappée dans l'intervalle `[-1, 1]`.
+    This function computes the distance between the wrist and a specific finger landmark,
+    normalizes it using the distance between the index and pinky fingers as a reference,
+    and remaps the result to the range [-1, 1] for stability.
 
     Args:
-        hand: Unknown.
-        wrist: Unknown.
-        tip_index: Index du doigt pour lequel calculer la distance.
+        hand: A list of hand landmarks, where each landmark is an object with x and y attributes.
+        wrist: The wrist landmark, an object with x and y attributes.
+        tip_index: The index of the finger landmark to compute the distance for.
 
     Returns:
-        float: Distance normalisée et remappée dans l'intervalle [-1, 1].
+        float: The normalized distance in the range [-1, 1].
     """
-
     tip = hand[tip_index]
 
     # Distance poignet <-> doigt
@@ -44,3 +45,72 @@ def wrist_distance_relative(hand, wrist, tip_index: int) -> float:
     dist = dist - 1.0
 
     return dist
+
+
+def create_perlin_layer():
+    """
+    Creates a Perlin noise layer function to apply smooth random motion to hand data.
+
+    This function generates a closure that applies Perlin-like noise to the input data,
+    simulating natural motion. The noise parameters (speed, phase, and amplitude) are
+    randomly initialized for each key in the input data.
+
+    Returns:
+        A function that takes a dictionary of float values and returns a modified dictionary
+        with Perlin noise applied to each value.
+    """
+    speed: dict[str, float] = {}
+    phase: dict[str, float] = {}
+    amplitude: dict[str, float] = {}
+
+    def clamp(v: float) -> float:
+        """Clamps a value to the range [-1, 1]."""
+        return max(-1, min(1, v))
+
+    def perlin_like(t: float, p: float) -> float:
+        """
+        Generates a Perlin-like noise value.
+
+        Args:
+            t: Time parameter.
+            p: Phase parameter.
+
+        Returns:
+            A noise value in the range [-1, 1].
+        """
+        return (
+            math.sin(t + p) * 0.6
+            + math.sin(t * 0.5 + p * 2.1) * 0.3
+            + math.sin(t * 0.25 + p * 0.7) * 0.1
+        )
+
+    def perlin_layer(message: dict[str, float]):
+        """
+        Applies Perlin noise to the input data.
+
+        Args:
+            message: A dictionary of float values representing hand data.
+
+        Returns:
+            A dictionary with Perlin noise applied to each value.
+        """
+        t = time.time()
+        agent: dict[str, float] = {}
+
+        for f in message.keys():
+            if f not in speed:
+                speed[f] = random.uniform(1, 6)
+                phase[f] = random.uniform(0, 1000)
+                amplitude[f] = random.uniform(-5, 5)
+
+            motion = perlin_like(t * speed[f], phase[f])
+            motion *= amplitude[f]
+
+            follow = message[f] * 0.25
+            value = motion + follow
+
+            agent[f] = clamp(value)
+
+        return agent
+
+    return perlin_layer

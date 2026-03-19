@@ -4,7 +4,6 @@ start_hand_tracking(
     [
         ("full", "127.0.0.1", 5055),  # Unity
         ("full", "127.0.0.1", 5057),  # Other python
-        ("small", "10.0.0.45", 5000),  # Raspberry
-    ],
-    False,
+        ("small", "10.1.224.201", 5000),  # Raspberry
+    ]
 )

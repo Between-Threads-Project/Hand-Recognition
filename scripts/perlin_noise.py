@@ -14,12 +14,11 @@ phase = {}
 amplitude = {}
 
 
-def clamp(v):
-    """Clamp a value between -1 and 1."""
+def clamp(v: float) -> float:
     return max(-1, min(1, v))
 
 
-def perlin_like(t, p):
+def perlin_like(t: float, p: float) -> float:
     return (
         math.sin(t + p) * 0.6
         + math.sin(t * 0.5 + p * 2.1) * 0.3
@@ -27,9 +26,9 @@ def perlin_like(t, p):
     )
 
 
-def Perlin_layer(message):
+def perlin_layer(message: dict[str, float]) -> dict[str, float]:
 
-    fingers = message.keys
+    fingers = message.keys()
     t = time.time()
 
     agent = {}
