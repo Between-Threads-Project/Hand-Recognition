@@ -6,13 +6,13 @@ import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
-from core.utils import wrist_distance_relative
+from core.utils import wrist_distance_relative, low_pass_filter
 
 UDP_IP_full = "127.0.0.1"
 UDP_PORT_Droit_full = 5060
 UDP_PORT_Gauche_full = 5059
 
-UDP_IP_small = "10.0.0.45"
+UDP_IP_small = "100.127.151.6"
 UDP_PORT_Droit_small = 5000
 UDP_PORT_Gauche_small = 5001
 
@@ -52,6 +52,7 @@ while True:
     result = landmarker.detect_for_video(mp_image, timestamp)
 
     if result.hand_landmarks:
+        filter_small = low_pass_filter()
         for i, hand in enumerate(result.hand_landmarks):  # MODIF : itération mains
             wrist = hand[0]
 
@@ -79,6 +80,7 @@ while True:
                 "pinky2": pinky2,
             }
             small_data = {"index": round(index1, 1), "middle": round(middle1, 1)}
+            small_data = filter_small(small_data)
 
             full_message = json.dumps(full_data)
             small_message = json.dumps(small_data)

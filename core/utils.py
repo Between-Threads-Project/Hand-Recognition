@@ -114,3 +114,31 @@ def create_perlin_layer():
         return agent
 
     return perlin_layer
+
+def low_pass_filter(alpha: float = 0.2, deadzone: float = 0.02):
+    prev = {}
+
+    def filter_fn(data: dict[str, float]) -> dict[str, float]:
+        nonlocal prev
+
+        if not prev:
+            prev = data.copy()
+            return data
+
+        filtered = {}
+        for key, value in data.items():
+            prev_val = prev.get(key, value)
+
+            # 1️⃣ calcul du filtre
+            new_val = alpha * value + (1 - alpha) * prev_val
+
+            # 2️⃣ deadzone (APRÈS)
+            if abs(new_val - prev_val) < deadzone:
+                new_val = prev_val
+
+            filtered[key] = new_val
+
+        prev = filtered
+        return filtered
+
+    return filter_fn

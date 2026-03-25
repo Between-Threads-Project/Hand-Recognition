@@ -7,8 +7,7 @@ import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
-from core.utils import wrist_distance_relative
-
+from core.utils import wrist_distance_relative, low_pass_filter
 
 def start_hand_tracking(
     address: List[Tuple[str, str, int]],
@@ -100,6 +99,8 @@ def start_hand_tracking(
                     "index": round(index1, 1),
                     "middle": round(middle1, 1),
                 }
+                filter_small = low_pass_filter()
+                small_data = filter_small(small_data)
 
                 print("Hand recognized.", end=" ")
 
