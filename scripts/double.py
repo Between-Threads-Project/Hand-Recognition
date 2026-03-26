@@ -52,7 +52,8 @@ while True:
     result = landmarker.detect_for_video(mp_image, timestamp)
 
     if result.hand_landmarks:
-        filter_small = low_pass_filter()
+        filter_small_right = low_pass_filter()
+        filter_small_left = low_pass_filter()
         for i, hand in enumerate(result.hand_landmarks):  # MODIF : itération mains
             wrist = hand[0]
 
@@ -79,14 +80,20 @@ while True:
                 "pinky1": pinky1,
                 "pinky2": pinky2,
             }
+            handedness = result.handedness[i][0].category_name
+            
             small_data = {"index": round(index1, 1), "middle": round(middle1, 1)}
-            small_data = filter_small(small_data)
+            if handedness == "Right":
+                small_data = filter_small_right(small_data)
+
+            elif handedness == "Left":
+                small_data = filter_small_left(small_data)
 
             full_message = json.dumps(full_data)
             small_message = json.dumps(small_data)
 
             # MODIF : détection Left / Right
-            handedness = result.handedness[i][0].category_name
+            
 
             if handedness == "Right":
                 sock.sendto(full_message.encode(), (UDP_IP_full, UDP_PORT_Droit_full))
